@@ -61,8 +61,12 @@ NewsApp is a full-stack Django web application that serves as a news publishing 
 ### Installation 
 
 ### Step1: Navigate to the project directory
-```
-cd news_application 
+```bash
+# Clone the project 
+git clone https://github.com/reacoda/news_app.git
+
+# navigate to the directory
+cd news_app/news_project 
 ```
 
 ### Step 2: Create virtual environment 
