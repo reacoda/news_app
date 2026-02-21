@@ -1,0 +1,39 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Join Publisher - NewsApp{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow border-primary">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    🏢 Join Publisher
+                </h3>
+            </div>
+            <div class="card-body p-4 text-center">
+                <p class="lead">
+                    Join <strong>{{ publisher.name }}</strong>?
+                </p>
+                <p class="text-muted">
+                    You'll be able to publish articles under this publisher's name.
+                </p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            Yes, Join
+                        </button>
+                        <a href="{% url 'publisher_list' %}"
+                           class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

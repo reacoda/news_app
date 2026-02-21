@@ -1,0 +1,443 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Dashboard - NewsApp{% endblock %}
+
+{% block content %}
+
+<!-- ==================== -->
+<!-- JOURNALIST DASHBOARD -->
+<!-- ==================== -->
+{% if user.role == 'journalist' %}
+
+    <!-- Articles Section -->
+    <div class="d-flex justify-content-between 
+                align-items-center mb-4">
+        <h2>📝 My Articles</h2>
+        <a href="{% url 'create_article' %}" 
+           class="btn btn-dark">
+            + Write New Article
+        </a>
+    </div>
+    
+    {% if articles %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for article in articles %}
+                    <tr>
+                        <td>{{ article.title }}</td>
+                        <td>
+                            {{ article.created_at|date:"d M Y" }}
+                        </td>
+                        <td>
+                            {% if article.approved %}
+                                <span class="badge bg-success">
+                                    Approved
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_article' article.pk %}" 
+                               class="btn btn-sm btn-outline-dark">
+                                Edit
+                            </a>
+                            <a href="{% url 'delete_article' article.pk %}"
+                               class="btn btn-sm btn-outline-danger">
+                                Delete
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            You haven't written any articles yet!
+            <a href="{% url 'create_article' %}">
+                Write your first article
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Newsletters Section -->
+    <div class="mt-5">
+        <div class="d-flex justify-content-between 
+                    align-items-center mb-4">
+            <h2>📋 My Newsletters</h2>
+            <a href="{% url 'create_newsletter' %}" 
+               class="btn btn-dark">
+                + Create Newsletter
+            </a>
+        </div>
+        
+        {% with newsletters=user.newsletters.all %}
+            {% if newsletters %}
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    {% for newsletter in newsletters %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {{ newsletter.title }}
+                                    </h5>
+                                    <p class="card-text text-muted small">
+                                        {{ newsletter.description|truncatewords:15 }}
+                                    </p>
+                                    <div class="mt-3">
+                                        <span class="badge bg-secondary">
+                                            📋 {{ newsletter.articles.count }} article(s)
+                                        </span>
+                                        <span class="badge bg-light text-dark">
+                                            📅 {{ newsletter.created_at|date:"d M Y" }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="{% url 'newsletter_detail' newsletter.pk %}"
+                                           class="btn btn-sm btn-primary flex-fill">
+                                            View
+                                        </a>
+                                        <a href="{% url 'edit_newsletter' newsletter.pk %}"
+                                           class="btn btn-sm btn-warning flex-fill">
+                                            Edit
+                                        </a>
+                                        <a href="{% url 'delete_newsletter' newsletter.pk %}"
+                                           class="btn btn-sm btn-danger flex-fill">
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    You haven't created any newsletters yet!
+                    <a href="{% url 'create_newsletter' %}">
+                        Create your first newsletter
+                    </a>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+
+<!-- ================ -->
+<!-- EDITOR DASHBOARD -->
+<!-- ================ -->
+{% elif user.role == 'editor' %}
+
+    <h2 class="mb-4">📋 Editor Dashboard</h2>
+    
+    <!-- Tabs for pending/approved articles -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" 
+               data-bs-toggle="tab"
+               href="#pending">
+                 Pending 
+                ({{ pending_articles.count }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link"
+               data-bs-toggle="tab"
+               href="#approved">
+                Approved
+                ({{ approved_articles.count }})
+            </a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        
+        <!-- PENDING TAB -->
+        <div class="tab-pane active" id="pending">
+            {% for article in pending_articles %}
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {{ article.title }}
+                        </h5>
+                        <p class="text-muted">
+                            ✍️ By: <strong>{{ article.author.username }}</strong>
+                            {% if article.publisher %}
+                                | 🏢 {{ article.publisher.name }}
+                            {% endif %}
+                            | 📅 {{ article.created_at|date:"d M Y" }}
+                        </p>
+                        <p class="card-text">
+                            {{ article.content|truncatewords:30 }}
+                        </p>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <form method="POST" 
+                                  action="{% url 'approve_article' article.pk %}"
+                                  style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn btn-success btn-sm">
+                                    Approve
+                                </button>
+                            </form>
+                            <a href="{% url 'article_detail' article.pk %}"
+                               class="btn btn-info btn-sm">
+                                View
+                            </a>
+                            <a href="{% url 'edit_article' article.pk %}"
+                               class="btn btn-warning btn-sm">
+                                Edit
+                            </a>
+                            <a href="{% url 'delete_article' article.pk %}"
+                               class="btn btn-danger btn-sm">
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-success">
+                    No articles pending approval! 
+                    All caught up!
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- APPROVED TAB -->
+        <div class="tab-pane" id="approved">
+            {% for article in approved_articles %}
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between 
+                                    align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-2">
+                                    {{ article.title }}
+                                    <span class="badge bg-success ms-2">
+                                        Approved
+                                    </span>
+                                </h5>
+                                <p class="text-muted mb-2">
+                                    ✍️ By: <strong>{{ article.author.username }}</strong>
+                                    {% if article.publisher %}
+                                        | 🏢 {{ article.publisher.name }}
+                                    {% endif %}
+                                    | 📅 {{ article.created_at|date:"d M Y" }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="{% url 'article_detail' article.pk %}"
+                               class="btn btn-info btn-sm">
+                                 View
+                            </a>
+                            <a href="{% url 'edit_article' article.pk %}"
+                               class="btn btn-warning btn-sm">
+                                Edit
+                            </a>
+                            <a href="{% url 'delete_article' article.pk %}"
+                               class="btn btn-danger btn-sm">
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    No approved articles yet.
+                </div>
+            {% endfor %}
+        </div>
+        
+    </div>
+
+    <!-- Newsletters Management Section for Editors -->
+    <div class="mt-5">
+        <div class="d-flex justify-content-between 
+                    align-items-center mb-4">
+            <h2>Manage Newsletters</h2>
+            <div class="d-flex gap-2">
+                <!--<a href="{% url 'create_newsletter' %}" 
+                   class="btn btn-dark">
+                    + Create Newsletter
+                </a> -->
+                <a href="{% url 'newsletter_list' %}" 
+                   class="btn btn-outline-dark">
+                    View All Newsletters 
+                </a>
+            </div>
+        </div>
+        
+        {% with all_newsletters=user.newsletters.all|slice:":6" %}
+            {% if all_newsletters %}
+                <div class="row row-cols-1 row-cols-md-3 g-4">
+                    {% for newsletter in all_newsletters %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        {{ newsletter.title }}
+                                    </h6>
+                                    <p class="card-text text-muted small">
+                                        {{ newsletter.description|truncatewords:10 }}
+                                    </p>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            {{ newsletter.author.username }}
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ newsletter.articles.count }} article(s)
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-white">
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a href="{% url 'newsletter_detail' newsletter.pk %}"
+                                           class="btn btn-sm btn-dark flex-fill">
+                                            Manage
+                                        </a>
+                                        <a href="{% url 'edit_newsletter' newsletter.pk %}"
+                                           class="btn btn-sm btn-warning flex-fill">
+                                            Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                {% if user.newsletters.count > 6 %}
+                    <div class="text-center mt-4">
+                        <a href="{% url 'newsletter_list' %}" 
+                           class="btn btn-outline-dark">
+                            View All {{ user.newsletters.count }} Newsletters →
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    No newsletters created yet.
+                    <a href="{% url 'create_newsletter' %}">
+                        Create the first newsletter
+                    </a>
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+
+<!-- ================ -->
+<!-- READER DASHBOARD -->
+<!-- ================ -->
+{% elif user.role == 'reader' %}
+
+    <h2 class="mb-4">My News Feed</h2>
+    
+    <div class="row">
+        <!-- Subscribed Publishers -->
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        My Subscribed Publishers
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if subscribed_publishers %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for publisher in subscribed_publishers %}
+                                <span class="badge bg-secondary p-2">
+                                    {{ publisher.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'subscriptions' %}" 
+                               class="btn btn-sm btn-outline-dark">
+                                Manage Subscriptions
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-3">
+                            You're not subscribed to any publishers yet.
+                        </p>
+                        <a href="{% url 'subscriptions' %}" 
+                           class="btn btn-dark">
+                            Browse Publishers
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Followed Journalists -->
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        My Followed Journalists
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if subscribed_journalists %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for journalist in subscribed_journalists %}
+                                <span class="badge bg-secondary p-2">
+                                    {{ journalist.username }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'subscriptions' %}" 
+                               class="btn btn-sm btn-outline-dark">
+                                Manage Subscriptions
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-3">
+                            You're not following any journalists yet.
+                        </p>
+                        <a href="{% url 'subscriptions' %}" 
+                           class="btn btn-dark">
+                            Browse Journalists
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <h4 class="mb-3">Explore Content</h4>
+        <div class="d-flex gap-3 flex-wrap">
+            <a href="{% url 'article_list' %}" 
+               class="btn btn-dark btn-lg">
+                Browse All Articles
+            </a>
+            <a href="{% url 'newsletter_list' %}" 
+               class="btn btn-outline-dark btn-lg">
+                Browse Newsletters
+            </a>
+        </div>
+    </div>
+
+{% endif %}
+
+{% endblock %}

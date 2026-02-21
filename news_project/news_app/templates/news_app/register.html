@@ -1,0 +1,66 @@
+<!-- news_app/templates/news_app/register.html -->
+{% extends 'news_app/base.html' %}
+
+{% block title %}Register - NewsApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        
+        <div class="card shadow mt-5">
+            <div class="card-header bg-dark text-white">
+                <h3 class="text-center mb-0">
+                    Create An Account
+                </h3>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            
+                            <!-- Show validation errors -->
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <!-- Show help text -->
+                            {% if field.help_text %}
+                                <div class="text-muted small">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" 
+                                class="btn btn-dark btn-lg">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Already have an account? 
+                        <a href="{% url 'login' %}">
+                            Login here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

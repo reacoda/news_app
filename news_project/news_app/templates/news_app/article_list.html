@@ -1,0 +1,63 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Articles - NewsApp{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">📰 Latest Articles</h2>
+
+<div class="mb-4">
+    <form method="GET">
+        <div class="input-group">
+            <input type="text"
+                   class="form-control form-control-lg"
+                   name="search"
+                   placeholder="🔍 Search articles..."
+                   value="{{ request.GET.search }}">
+            <button class="btn btn-dark"
+                    type="submit">
+                Search
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if articles %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for article in articles %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {{ article.title }}
+                        </h5>
+                        <p class="card-text text-muted">
+                            {{ article.content|truncatewords:20 }}
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <small class="text-muted">
+                            ✍️ {{ article.author.username }}
+                            {% if article.publisher %}
+                                | 🏢 {{ article.publisher.name }}
+                            {% endif %}
+                            | 📅 {{ article.created_at|date:"d M Y" }}
+                        </small>
+                        <div class="mt-2">
+                            <a href="{% url 'article_detail' article.pk %}"
+                               class="btn btn-sm btn-dark">
+                                Read More →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No articles published yet! 
+    </div>
+{% endif %}
+
+{% endblock %}

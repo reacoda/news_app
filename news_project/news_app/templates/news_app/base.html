@@ -1,0 +1,156 @@
+<!-- news_app/templates/news_app/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" 
+          content="width=device-width, 
+                   initial-scale=1.0">
+    <title>{% block title %}NewsApp{% endblock %}</title>
+    
+    <!-- Bootstrap for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+          rel="stylesheet">
+    
+    {% load static %}
+    <link rel="stylesheet" 
+          href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            
+            <!-- LOGO -->
+            <a class="navbar-brand fw-bold" href="/">
+                NewsApp
+            </a>
+            
+            <!-- NAV LINKS -->
+            <div class="navbar-nav ms-auto">
+                
+                {% if user.is_authenticated %}
+                    
+                    <!-- Links for ALL logged in users -->
+                    <a class="nav-link" 
+                       href="{% url 'article_list' %}">
+                        Articles
+                    </a>
+                    <a class="nav-link" 
+                       href="{% url 'newsletter_list' %}">
+                        Newsletters
+                    </a>
+                    
+                    <!-- Publishers - ALL logged in users can see -->
+                    <a class="nav-link" 
+                       href="{% url 'publisher_list' %}">
+                        Publishers
+                    </a>
+                    
+                    <!-- Links for JOURNALISTS only -->
+                    {% if user.role == 'journalist' %}
+                        <a class="nav-link" 
+                           href="{% url 'create_article' %}">
+                            Write Article
+                        </a>
+                        <a class="nav-link" 
+                           href="{% url 'dashboard' %}">
+                            My Articles
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Links for EDITORS only -->
+                    {% if user.role == 'editor' %}
+                        <a class="nav-link" 
+                           href="{% url 'dashboard' %}">
+                            Editor Dashboard
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Links for READERS only -->
+                    {% if user.role == 'reader' %}
+                        <a class="nav-link" 
+                           href="{% url 'subscriptions' %}">
+                            Subscriptions
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Logout always visible -->
+                    <a class="nav-link" 
+                       href="{% url 'logout' %}">
+                        Logout ({{ user.username }})
+                    </a>
+                
+                {% else %}
+                    <!-- Links for NOT logged in users -->
+                    
+                    <!-- Public links - visible even when logged out -->
+                    <a class="nav-link" 
+                       href="{% url 'article_list' %}">
+                        Articles
+                    </a>
+                    <a class="nav-link" 
+                       href="{% url 'newsletter_list' %}">
+                        Newsletters
+                    </a>
+                    
+                    <!--Publishers - Public can browse too -->
+                    <a class="nav-link" 
+                       href="{% url 'publisher_list' %}">
+                        Publishers
+                    </a>
+                    
+                    <!-- Auth links -->
+                    <a class="nav-link" 
+                       href="{% url 'login' %}">
+                        Login
+                    </a>
+                    <a class="nav-link" 
+                       href="{% url 'register' %}">
+                        Register
+                    </a>
+                {% endif %}
+                
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="container mt-4">
+        
+        <!-- Flash messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} 
+                            alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" 
+                            class="btn-close" 
+                            data-bs-dismiss="alert">
+                    </button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Page content goes here -->
+        {% block content %}
+        {% endblock %}
+        
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark text-white mt-5 p-4 text-center">
+        <p>© 2026 NewsApp | By Tiisetso Mphuthi 
+           <!--<a href="#" class="text-white">About</a> | 
+           <a href="#" class="text-white">Contact</a> |
+           <a href="#" class="text-white">Terms</a> -->
+        </p>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+    </script>
+    
+</body>
+</html>

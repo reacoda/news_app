@@ -1,0 +1,77 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Subscriptions - NewsApp{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">🔔 Manage Subscriptions</h2>
+
+<div class="row">
+    <!-- Publishers Section -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                🏢 Publishers
+            </div>
+            <div class="card-body">
+                {% for publisher in publishers %}
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-2">
+                        <span>{{ publisher.name }}</span>
+                        <a href="{% url 'subscribe_publisher' publisher.pk %}"
+                           class="btn btn-sm
+                           {% if publisher in request.user.subscribed_publishers.all %}
+                               btn-danger
+                           {% else %}
+                               btn-dark
+                           {% endif %}">
+                            {% if publisher in request.user.subscribed_publishers.all %}
+                                Unsubscribe
+                            {% else %}
+                                Subscribe
+                            {% endif %}
+                        </a>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">
+                        No publishers available yet.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Journalists Section -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                ✍️ Journalists
+            </div>
+            <div class="card-body">
+                {% for journalist in journalists %}
+                    <div class="d-flex justify-content-between
+                                align-items-center mb-2">
+                        <span>{{ journalist.username }}</span>
+                        <a href="{% url 'subscribe_journalist' journalist.pk %}"
+                           class="btn btn-sm
+                           {% if journalist in request.user.subscribed_journalists.all %}
+                               btn-danger
+                           {% else %}
+                               btn-dark
+                           {% endif %}">
+                            {% if journalist in request.user.subscribed_journalists.all %}
+                                Unfollow
+                            {% else %}
+                                Follow
+                            {% endif %}
+                        </a>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">
+                        No journalists available yet.
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

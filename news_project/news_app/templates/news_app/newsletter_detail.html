@@ -1,0 +1,97 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}{{ newsletter.title }} - NewsApp{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        
+        <!-- Back Button -->
+        <a href="{% url 'newsletter_list' %}"
+           class="btn btn-outline-dark mb-4">
+            ← Back to Newsletters
+        </a>
+        
+        <!-- Newsletter Header -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="mb-3">{{ newsletter.title }}</h1>
+                
+                <div class="text-muted mb-3 pb-3 border-bottom">
+                    ✍️ <strong>{{ newsletter.author.username }}</strong>
+                    | 📅 {{ newsletter.created_at|date:"d M Y" }}
+                    | 📋 {{ newsletter.articles.count }} article(s)
+                </div>
+                
+                <p class="lead">{{ newsletter.description }}</p>
+                
+                <!-- Edit/Delete Buttons (Author or Editor only) -->
+                {% if user.is_authenticated %}
+                    {% if user == newsletter.author or user.role == 'editor' %}
+                        <div class="mt-4 pt-3 border-top">
+                            <a href="{% url 'edit_newsletter' newsletter.pk %}"
+                               class="btn btn-warning">
+                                Edit Newsletter
+                            </a>
+                            <a href="{% url 'delete_newsletter' newsletter.pk %}"
+                               class="btn btn-danger">
+                                Delete Newsletter
+                            </a>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Articles in Newsletter -->
+        <h3 class="mb-4">Articles in this Newsletter</h3>
+        
+        {% if newsletter.articles.all %}
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for article in newsletter.articles.all %}
+                    {% if article.approved %}
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {{ article.title }}
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        {{ article.content|truncatewords:20 }}
+                                    </p>
+                                </div>
+                                <div class="card-footer">
+                                    <small class="text-muted">
+                                        ✍️ {{ article.author.username }}
+                                        | 📅 {{ article.created_at|date:"d M Y" }}
+                                    </small>
+                                    <div class="mt-2">
+                                        <a href="{% url 'article_detail' article.pk %}"
+                                           class="btn btn-sm btn-dark">
+                                            Read Article →
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">
+                    No articles in this newsletter yet.
+                    {% if user == newsletter.author or user.role == 'editor' %}
+                        <a href="{% url 'edit_newsletter' newsletter.pk %}">
+                            Add articles to this newsletter
+                        </a>
+                    {% endif %}
+                </p>
+            </div>
+        {% endif %}
+        
+    </div>
+</div>
+
+{% endblock %}

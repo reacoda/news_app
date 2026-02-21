@@ -1,0 +1,87 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Publishers - NewsApp{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between 
+            align-items-center mb-4">
+    <h2>Publishers</h2>
+    
+    {% if user.is_staff %}
+        <a href="{% url 'create_publisher' %}" 
+           class="btn btn-dark">
+            + Create Publisher
+        </a>
+    {% endif %}
+</div>
+
+{% if publishers %}
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for publisher in publishers %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {{ publisher.name }}
+                        </h5>
+                        <div class="mt-3">
+                            <p class="text-muted small mb-1">
+                                {{ publisher.journalists.count }} journalist(s)
+                            </p>
+                            <p class="text-muted small mb-1">
+                                {{ publisher.editors.count }} editor(s)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        {% if user.role == 'journalist' or user.role == 'editor' %}
+                            {% if user.role == 'journalist' %}
+                                {% if user in publisher.journalists.all %}
+                                    <span class="badge bg-success mb-2">
+                                        Joined as Journalist
+                                    </span>
+                                    <a href="{% url 'leave_publisher' publisher.pk %}"
+                                       class="btn btn-sm btn-outline-danger w-100">
+                                        Leave Publisher
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'join_publisher' publisher.pk %}"
+                                       class="btn btn-sm btn-dark w-100">
+                                        Join as Journalist
+                                    </a>
+                                {% endif %}
+                            {% elif user.role == 'editor' %}
+                                {% if user in publisher.editors.all %}
+                                    <span class="badge bg-success mb-2">
+                                        Joined as Editor
+                                    </span>
+                                    <a href="{% url 'leave_publisher' publisher.pk %}"
+                                       class="btn btn-sm btn-outline-danger w-100">
+                                        Leave Publisher
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'join_publisher' publisher.pk %}"
+                                       class="btn btn-sm btn-dark w-100">
+                                        Join as Editor
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No publishers yet! 
+        {% if user.is_staff %}
+            <a href="{% url 'create_publisher' %}">
+                Create the first publisher
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% endblock %}

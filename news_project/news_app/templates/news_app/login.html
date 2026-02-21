@@ -1,0 +1,55 @@
+{% extends 'news_app/base.html' %}
+
+{% block title %}Login - NewsApp{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow mt-5">
+            <div class="card-header bg-dark text-white">
+                <h3 class="text-center mb-0">
+                    Login to NewsApp
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            Invalid username or password!
+                        </div>
+                    {% endif %}
+                    <div class="d-grid mt-4">
+                        <button type="submit"
+                                class="btn btn-dark btn-lg">
+                            Login
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <p>Don't have an account?
+                        <a href="{% url 'register' %}">
+                            Register here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
