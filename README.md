@@ -61,12 +61,16 @@ NewsApp is a full-stack Django web application that serves as a news publishing 
 ### Installation 
 
 ### Step1: Navigate to the project directory
-```
-cd news_application 
+```bash
+# Clone the project 
+git clone https://github.com/reacoda/news_app.git
+
+# navigate to the directory
+cd news_application/ 
 ```
 
 ### Step 2: Create virtual environment 
-``` 
+```bash 
 python -m venv venv
 
 # Activate on Windows 
@@ -77,12 +81,12 @@ source venv/bin/activate
 ```
 
 ### Step 3: Install dependencies
-```
+```bash
 pip install -r requirements.txt
 ```
 
 ### Step 4: Create MariaDB database
-```
+```bash
 mysql -u root -p
 CREATE DATABASE news_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 EXIT;
@@ -92,7 +96,7 @@ EXIT;
 
 ### Step 1: Configure database in news_project/settings.py
 
-```
+```bash
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -107,7 +111,7 @@ DATABASES = {
 
 ### Step 2: Configure email settings 
 
-```
+```bash
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -118,7 +122,7 @@ EMAIL_HOST_PASSWORD = 'your-app-password'
 
 ### Step 3: Configure Twitter/X API
 
-```
+```bash
 TWITTER_BEARER_TOKEN = 'your-twitter-bearer-token'
 TWITTER_API_KEY = 'your-api-key'
 TWITTER_API_SECRET = 'your-api-secret'
@@ -128,25 +132,25 @@ TWITTER_API_SECRET = 'your-api-secret'
 
 Navigate to the following directory:
 
-```
+```bash
 cd news_application\news_project
 ```
 ## Step 1: Set up user groups and permissions
 
-```
+```bash
 python manage.py setup_groups
 ```
 
 ## Step 2: Apply database migrations 
 
-```
+```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
 ## Step 3: Create a superuser(optional)
 
-```
+```bash
 python manage.py createsuperuser
 ```
 Enter username, email, and password when prompted.
@@ -155,7 +159,7 @@ Enter username, email, and password when prompted.
 **Step 4: Register models with Django admin**
 
 Ensure `news_app/admin.py` contains:
-```python
+```bash
 from django.contrib import admin
 from .models import CustomUser, Article, Newsletter, Publisher
 
@@ -171,7 +175,7 @@ python manage.py runserver
 ```
 
 **Step 6: Visit the application**
-```
+```bash
 http://127.0.0.1:8000/
 ```
 
@@ -189,7 +193,7 @@ Publishers are news organizations that journalists can join to publish articles 
    ```
 
 2. Navigate to Django admin:
-   ```
+   ```bash
    http://127.0.0.1:8000/admin/
    ```
 
@@ -206,7 +210,7 @@ Publishers are news organizations that journalists can join to publish articles 
 
 **Recommended Publishers to Create:**
 
-```
+```bash
 International Publishers:
 - BBC News
 - CNN
@@ -242,7 +246,7 @@ Tech/Specialized Publishers:
 2. Login as the staff user
 
 3. Navigate to:
-   ```
+   ```bash
    http://127.0.0.1:8000/publishers/
    ```
 
@@ -263,7 +267,7 @@ Tech/Specialized Publishers:
 1. Login as a journalist or editor
 
 2. Navigate to:
-   ```
+   ```bash
    http://127.0.0.1:8000/publishers/
    ```
 
@@ -294,7 +298,7 @@ For **Editors**:
 **Steps:**
 
 1. Navigate to:
-   ```
+   ```bash
    http://127.0.0.1:8000/publishers/
    ```
 
@@ -324,7 +328,7 @@ For **Editors**:
 1. Login as a reader
 
 2. Navigate to:
-   ```
+   ```bash
    http://127.0.0.1:8000/publishers/
    ```
 
@@ -348,7 +352,7 @@ All API endpoints require JWT authentication
 
 ## Get Token:
 
-```
+```bash
 POST /api/token/
 Content-Type: application/json
 
@@ -366,7 +370,8 @@ Response:
 
 ## Use Token:
 
-```Authorization: Bearer <your_access_token>
+```bash
+Authorization: Bearer <your_access_token>
 ```
 
 ## Article Endpoints 
