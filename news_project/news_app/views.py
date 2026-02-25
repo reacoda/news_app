@@ -196,48 +196,31 @@ def create_article_view(request):
 
 
 @login_required
-@permission_required(
-    'news_app.change_article',
-    raise_exception=True
-)
+@permission_required("news_app.change_article", raise_exception=True)
 def edit_article_view(request, pk):
     """
     Allows journalists/editors to edit articles.
     """
     article = get_object_or_404(Article, pk=pk)
-    
+
     # Journalist can only edit OWN articles
-    if request.user.role == 'journalist':
+    if request.user.role == "journalist":
         if article.author != request.user:
-            messages.error(
-                request,
-                'You can only edit your own articles!'
-            )
-            return redirect('dashboard')
-    
-    if request.method == 'POST':
-        form = ArticleForm(
-            request.POST,
-            instance=article
-        )
+            messages.error(request, "You can only edit your own articles!")
+            return redirect("dashboard")
+
+    if request.method == "POST":
+        form = ArticleForm(request.POST, instance=article)
         if form.is_valid():
             form.save()
-            messages.success(
-                request,
-                'Article updated successfully!'
-            )
+            messages.success(request, "Article updated successfully!")
             # Redirect to dashboard
-            return redirect('dashboard')
+            return redirect("dashboard")
     else:
         form = ArticleForm(instance=article)
-    
+
     return render(
-        request,
-        'news_app/article_form.html',
-        {
-            'form': form,
-            'action': 'Edit'
-        }
+        request, "news_app/article_form.html", {"form": form, "action": "Edit"}
     )
 
 
@@ -460,18 +443,15 @@ def subscribe_journalist_view(request, pk):
 # Publisher Management Views
 # ==========================================
 
+
 @login_required
 def publisher_list_view(request):
     """
     Shows all publishers.
     """
-    publishers = Publisher.objects.all().order_by('name')
-    
-    return render(
-        request,
-        'news_app/publisher_list.html',
-        {'publishers': publishers}
-    )
+    publishers = Publisher.objects.all().order_by("name")
+
+    return render(request, "news_app/publisher_list.html", {"publishers": publishers})
 
 
 @login_required
@@ -484,29 +464,17 @@ def create_publisher_view(request):
     Allows creating new publishers.
     Only superusers or staff can create publishers.
     """
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        
+    if request.method == "POST":
+        name = request.POST.get("name")
+
         if name:
-            publisher = Publisher.objects.create(
-                name=name
-            )
-            messages.success(
-                request,
-                f'Publisher "{name}" created successfully!'
-            )
-            return redirect('publisher_list')
+            publisher = Publisher.objects.create(name=name)
+            messages.success(request, f'Publisher "{name}" created successfully!')
+            return redirect("publisher_list")
         else:
-            messages.error(
-                request,
-                'Publisher name is required!'
-            )
-    
-    return render(
-        request,
-        'news_app/publisher_form.html',
-        {'action': 'Create'}
-    )
+            messages.error(request, "Publisher name is required!")
+
+    return render(request, "news_app/publisher_form.html", {"action": "Create"})
 
 
 @login_required
@@ -515,33 +483,22 @@ def join_publisher_view(request, pk):
     Allows journalists/editors to join a publisher.
     """
     publisher = get_object_or_404(Publisher, pk=pk)
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         # Add user to publisher based on role
-        if request.user.role == 'journalist':
+        if request.user.role == "journalist":
             publisher.journalists.add(request.user)
-            messages.success(
-                request,
-                f'You joined {publisher.name} as a journalist!'
-            )
-        elif request.user.role == 'editor':
+            messages.success(request, f"You joined {publisher.name} as a journalist!")
+        elif request.user.role == "editor":
             publisher.editors.add(request.user)
-            messages.success(
-                request,
-                f'You joined {publisher.name} as an editor!'
-            )
+            messages.success(request, f"You joined {publisher.name} as an editor!")
         else:
-            messages.error(
-                request,
-                'Only journalists and editors can join publishers!'
-            )
-        
-        return redirect('publisher_list')
-    
+            messages.error(request, "Only journalists and editors can join publishers!")
+
+        return redirect("publisher_list")
+
     return render(
-        request,
-        'news_app/publisher_join_confirm.html',
-        {'publisher': publisher}
+        request, "news_app/publisher_join_confirm.html", {"publisher": publisher}
     )
 
 
@@ -551,26 +508,18 @@ def leave_publisher_view(request, pk):
     Allows journalists/editors to leave a publisher.
     """
     publisher = get_object_or_404(Publisher, pk=pk)
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         # Remove user from publisher based on role
-        if request.user.role == 'journalist':
+        if request.user.role == "journalist":
             publisher.journalists.remove(request.user)
-            messages.info(
-                request,
-                f'You left {publisher.name}'
-            )
-        elif request.user.role == 'editor':
+            messages.info(request, f"You left {publisher.name}")
+        elif request.user.role == "editor":
             publisher.editors.remove(request.user)
-            messages.info(
-                request,
-                f'You left {publisher.name}'
-            )
-        
-        return redirect('publisher_list')
-    
+            messages.info(request, f"You left {publisher.name}")
+
+        return redirect("publisher_list")
+
     return render(
-        request,
-        'news_app/publisher_leave_confirm.html',
-        {'publisher': publisher}
+        request, "news_app/publisher_leave_confirm.html", {"publisher": publisher}
     )
