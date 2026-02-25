@@ -137,7 +137,7 @@ TWITTER_API_SECRET = 'your-api-secret'
 Navigate to the following directory:
 
 ```bash
-cd news_application\news_project
+cd news_app\news_project
 ```
 ## Step 1: Set up user groups and permissions
 
