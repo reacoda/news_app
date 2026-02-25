@@ -82,6 +82,10 @@ source venv/bin/activate
 
 ### Step 3: Install dependencies
 ```bash
+# Navigate to the directory 
+cd news_app\news_project
+
+# Install the dependecies
 pip install -r requirements.txt
 ```
 
