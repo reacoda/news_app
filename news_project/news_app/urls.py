@@ -75,36 +75,17 @@ urlpatterns = [
         views.subscribe_journalist_view,
         name="subscribe_journalist",
     ),
-
     # ==========================================
     # PUBLISHER URLs
     # ==========================================
-
     # /publishers/
-    path(
-        'publishers/',
-        views.publisher_list_view,
-        name='publisher_list'
-    ),
-
+    path("publishers/", views.publisher_list_view, name="publisher_list"),
     # /publishers/create/
-    path(
-        'publishers/create/',
-        views.create_publisher_view,
-        name='create_publisher'
-    ),
-
+    path("publishers/create/", views.create_publisher_view, name="create_publisher"),
     # /publishers/<id>/join/
-    path(
-        'publishers/<int:pk>/join/',
-        views.join_publisher_view,
-        name='join_publisher'
-    ),
-
+    path("publishers/<int:pk>/join/", views.join_publisher_view, name="join_publisher"),
     # /publishers/<id>/leave/
     path(
-        'publishers/<int:pk>/leave/',
-        views.leave_publisher_view,
-        name='leave_publisher'
+        "publishers/<int:pk>/leave/", views.leave_publisher_view, name="leave_publisher"
     ),
 ]

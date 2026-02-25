@@ -232,8 +232,7 @@ def post_to_twitter(article):
             # Twitter Bearer Token for authorization
             # This is TWITTER'S key - not Django's!
             headers={
-                "Authorization": (f"Bearer "
-                                  f"{settings.TWITTER_BEARER_TOKEN}"),
+                "Authorization": (f"Bearer " f"{settings.TWITTER_BEARER_TOKEN}"),
                 "Content-Type": "application/json",
             },
             # Tweet content
@@ -244,8 +243,7 @@ def post_to_twitter(article):
         if response.status_code == 201:
             print("Tweet posted successfully!")
         else:
-            print(f"Tweet failed: " f"{response.status_code} "
-                  f"{response.text}")
+            print(f"Tweet failed: " f"{response.status_code} " f"{response.text}")
 
     except requests.exceptions.ConnectionError:
         # Twitter is unreachable
