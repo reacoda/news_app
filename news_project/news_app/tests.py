@@ -1,4 +1,26 @@
-# from django.test import TestCase
+"""
+Automated tests for the News App REST API.
+
+This module contains integration tests for all article and newsletter API
+endpoints using Django REST Framework's :class:`~rest_framework.test.APITestCase`.
+Tests cover:
+
+- Authentication enforcement (unauthenticated requests must be rejected)
+- Role-based access control (readers, journalists, and editors each have
+  specific permissions)
+- Article CRUD operations
+- Newsletter CRUD operations
+- Article approval workflow with mocked side-effects (email + Twitter)
+- Subscription filtering
+
+Test Class:
+    - :class:`ArticleAPITest`
+
+Note:
+    External side-effects (``send_approval_emails`` and ``post_to_twitter``)
+    are mocked using :func:`unittest.mock.patch` to prevent real emails
+    or tweets from being sent during test runs.
+"""
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -11,15 +33,32 @@ from .utils import assign_user_to_group
 
 class ArticleAPITest(APITestCase):
     """
-    Tests for Article REST API endpoints.
-    Tests authentication and authorization
-    for all three user roles.
+    Integration test suite for the News App Article and Newsletter REST API.
+
+    Tests authentication and authorisation behaviour for all three user
+    roles (reader, journalist, editor) against every relevant API endpoint.
+    Each test method is independent — the :meth:`setUp` method creates a
+    fresh set of database records before every test.
+
+    Fixtures created in :meth:`setUp`:
+        - ``self.publisher`` — a :class:`~news_app.models.Publisher` instance
+        - ``self.journalist`` — a journalist :class:`~news_app.models.CustomUser`
+        - ``self.editor`` — an editor :class:`~news_app.models.CustomUser`
+        - ``self.reader`` — a reader :class:`~news_app.models.CustomUser`
+        - ``self.article`` — an unapproved :class:`~news_app.models.Article`
+        - ``self.approved_article`` — an approved :class:`~news_app.models.Article`
     """
 
     def setUp(self):
         """
-        Runs BEFORE every single test!
-        Creates fresh test data each time.
+        Create test database records required by every test method.
+
+        This method runs automatically before each individual test. It creates
+        the required user groups, a publisher, three users (journalist, editor,
+        reader), and two articles (one unapproved, one approved).
+
+        The :func:`~news_app.utils.assign_user_to_group` utility is called for
+        each user to ensure group-based permissions are correctly assigned.
         """
 
         # Create groups first
@@ -76,8 +115,18 @@ class ArticleAPITest(APITestCase):
 
     def get_token(self, username, password):
         """
-        Helper function to get JWT token.
-        Avoids repeating token code in every test!
+        Obtain a JWT access token for the given user credentials.
+
+        This helper method posts to the ``token_obtain_pair`` endpoint
+        and extracts the ``access`` token from the response. It avoids
+        repeating the token acquisition logic in every test method.
+
+        :param:
+            username (str): The username of the user to authenticate.
+            password (str): The plaintext password of the user.
+
+        Returns:
+            str: A JWT access token string to be used in ``Authorization`` headers.
         """
         url = reverse("token_obtain_pair")
         response = self.client.post(
@@ -87,8 +136,14 @@ class ArticleAPITest(APITestCase):
 
     def auth_header(self, token):
         """
-        Helper function to create
-        Authorization header.
+        Build a Django test client ``Authorization`` header dict from a JWT token.
+
+        Args:
+            token (str): A JWT access token obtained via :meth:`get_token`.
+
+        Returns:
+            dict: A dictionary suitable for unpacking as ``**kwargs`` in a
+            test client request, e.g. ``{"HTTP_AUTHORIZATION": "Bearer <token>"}``.
         """
         return {"HTTP_AUTHORIZATION": f"Bearer {token}"}
 
@@ -98,9 +153,12 @@ class ArticleAPITest(APITestCase):
 
     def test_unauthenticated_cannot_access_api(self):
         """
-        Test that unauthenticated users
-        cannot access API endpoints.
-        Expected: 401 Unauthorized
+        Unauthenticated requests must be rejected with HTTP 401.
+
+        Verifies that the API correctly denies access when no JWT token
+        is supplied in the ``Authorization`` header.
+
+        Expected status: ``HTTP 401 Unauthorized``
         """
         url = reverse("api_article_list")
         response = self.client.get(url)
@@ -114,8 +172,9 @@ class ArticleAPITest(APITestCase):
 
     def test_reader_can_view_articles(self):
         """
-        Test that readers CAN view articles.
-        Expected: 200 OK
+        Authenticated readers can retrieve the approved article list.
+
+        Expected status: ``HTTP 200 OK``
         """
         token = self.get_token("test_reader", "testpass123")
         url = reverse("api_article_list")
@@ -126,8 +185,12 @@ class ArticleAPITest(APITestCase):
 
     def test_reader_cannot_create_article(self):
         """
-        Test that readers CANNOT create articles.
-        Expected: 403 Forbidden
+        Readers must not be permitted to create articles.
+
+        A POST request from a reader to the article list endpoint should
+        be rejected because only journalists have the ``IsJournalist`` permission.
+
+        Expected status: ``HTTP 403 Forbidden``
         """
         token = self.get_token("test_reader", "testpass123")
         url = reverse("api_article_list")
@@ -139,9 +202,13 @@ class ArticleAPITest(APITestCase):
 
     def test_reader_subscribed_articles(self):
         """
-        Test reader only gets articles from
-        subscribed journalists/publishers.
-        Expected: 200 OK + correct articles
+        A reader only sees articles from their subscribed journalists and publishers.
+
+        Subscribes the test reader to the test journalist, then calls the
+        ``subscribed_articles`` endpoint and verifies the response contains
+        at least one article.
+
+        Expected status: ``HTTP 200 OK`` with at least one article in the response.
         """
         # Subscribe reader to journalist
         self.reader.subscribed_journalists.add(self.journalist)
@@ -162,8 +229,13 @@ class ArticleAPITest(APITestCase):
 
     def test_journalist_can_create_article(self):
         """
-        Test that journalists CAN create articles.
-        Expected: 201 Created
+        Journalists can create new articles via the API.
+
+        Verifies that the created article has the requesting journalist set
+        as the author automatically, and that the article starts in an
+        unapproved state.
+
+        Expected status: ``HTTP 201 Created``
         """
         token = self.get_token("test_journalist", "testpass123")
         url = reverse("api_article_list")
@@ -179,8 +251,9 @@ class ArticleAPITest(APITestCase):
 
     def test_journalist_can_update_own_article(self):
         """
-        Test journalist can update their article.
-        Expected: 200 OK
+        Journalists can update articles via a PUT request.
+
+        Expected status: ``HTTP 200 OK``
         """
         token = self.get_token("test_journalist", "testpass123")
         url = reverse("api_article_detail", kwargs={"pk": self.approved_article.pk})
@@ -196,9 +269,18 @@ class ArticleAPITest(APITestCase):
 
     def test_editor_can_approve_article(self):
         """
-        Test editor can approve articles.
-        Also tests email and twitter are called!
-        Expected: 200 OK + approved=True
+        Editors can approve an article, triggering email and Twitter notifications.
+
+        Uses :func:`unittest.mock.patch` to mock both
+        :func:`~news_app.utils.send_approval_emails` and
+        :func:`~news_app.utils.post_to_twitter` to prevent real external
+        calls during testing.
+
+        Assertions:
+            - Response status is ``HTTP 200 OK``
+            - The article's ``approved`` flag is set to ``True`` in the database
+            - ``send_approval_emails`` was called exactly once
+            - ``post_to_twitter`` was called exactly once
         """
         token = self.get_token("test_editor", "testpass123")
 
@@ -229,8 +311,9 @@ class ArticleAPITest(APITestCase):
 
     def test_editor_can_delete_article(self):
         """
-        Test editor can delete articles.
-        Expected: 204 No Content
+        Editors can delete articles via a DELETE request.
+
+        Expected status: ``HTTP 204 No Content``
         """
         token = self.get_token("test_editor", "testpass123")
         url = reverse("api_article_detail", kwargs={"pk": self.approved_article.pk})
@@ -274,8 +357,9 @@ class ArticleAPITest(APITestCase):
 
     def test_reader_cannot_create_newsletter(self):
         """
-        Test reader cannot create newsletter.
-        Expected: 403 Forbidden
+        Readers must not be permitted to create newsletters.
+
+        Expected status: ``HTTP 403 Forbidden``
         """
         token = self.get_token("test_reader", "testpass123")
         url = reverse("api_newsletter_list")
