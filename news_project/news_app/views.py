@@ -1,3 +1,13 @@
+"""
+Browser-facing (HTML) views for the News App.
+
+This module contains all Django view functions and class-based view that render
+HTML templates for the web interface. It handles authentication,
+role-based dashboards, articles and newsletter management, subscriptions,
+and publisher management.
+
+"""
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required, permission_required
@@ -13,9 +23,17 @@ from .utils import assign_user_to_group, send_approval_emails, post_to_twitter
 
 def home_view(request):
     """
-    Landing page.
-    Redirects logged in users to dashboard.
-    Shows landing page to visitors.
+    Render the application landing page.
+    Authenticated users are redirected to their dashboard immediately.
+    Unauthenticated visitors see the public landing page.
+
+    :param:
+        request(django.http.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        django.http.HttpRequest: A redirect to 'dashboard' for
+        authenticated users, or a rendered 'news_app/home.html' template
+        for visitors.
     """
     # If already logged in go to dashboard
     if request.user.is_authenticated:
@@ -31,7 +49,26 @@ def home_view(request):
 def register_view(request):
     """
     Handles new user registration
-    Creates user, assigns role and group
+
+    Displays a registration form on GET requests. On a valid POST submission,
+    creates the new user, sets their role, assigns them to the correct
+    permission group via :func: news_app.utils.assign_user_to_group, logs them
+    in automatically, and redirects to the dashboard.
+
+    Authenticated user who visit this view are redirected to the dashboard
+    without seeing the form.
+
+    :param:
+        request(django.http.HttpRequest): The incoming HTTP request.
+        POST body should include 'username', 'email', 'role',
+        'password1', and 'password2'.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to 'dashboard' on successful registration.
+            - Redirect to 'dashboard' if user is already authenticated
+            - Rendered 'news_app/register.html' with the form on GET, or
+            on POST if the form contains validation errors
     """
     # If already logged in, go to dashboard
     if request.user.is_authenticated:
@@ -77,9 +114,18 @@ def register_view(request):
 
 class CustomLoginView(LoginView):
     """
-    Uses Django's built-in LoginView.
-    Need to customize the template
-    Django will handle all the login logic
+    Custom login view that extends Django's
+    built-in :class:`django.contrib.auth.views.LoginView`
+
+    Renders the applications's login template and redirects
+    already-authenticated users directly to the dashboard.
+    All login logic (credential validation, session creation) is
+    handled by the parent class.
+
+    Attributes:
+        template_name (str): Path to the login HTML template.
+        redirect_authenticated_user (bool): if True, authenticated users
+        visiting the login page are redirected to ``get_success_url()``
     """
 
     template_name = "news_app/login.html"
@@ -87,14 +133,27 @@ class CustomLoginView(LoginView):
 
     def get_success_url(self):
         """
-        Redirect to dashboard after login
+        Return the URL to redirect to after a successful login.
+
+        Returns:
+            str: The relative URL '/dashboard'
         """
         return "/dashboard"
 
 
 def logout_view(request):
     """
-    Logs user out and redirects to login
+    Log out the current user and redirect to the login page.
+
+    Calls Django's :func: 'django.contrib.auth.logout' to clear
+    the session, the shows an informational message and redirects.
+
+    :param:
+        request(django.http.HttpRequest): The incoming HTTP request.
+
+    Request:
+        django.http.HttpResponseRedirect: A redirect to the 'login' URL.
+
     """
     logout(request)
     messages.info(request, "You have been logged out")
@@ -107,8 +166,21 @@ def logout_view(request):
 @login_required
 def dashboard_view(request):
     """
-    Role-based dashboard
-    Shows different content based on user role
+     Render the role-specific dashboard for the authenticated user.
+
+    The context data passed to the template differs depending on the user's role:
+
+    - Journalist: their own articles ordered by most recent.
+    - Editor: all pending (unapproved) and approved articles.
+    - Reader: their subscribed publishers and journalists.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+            The user must be authenticated (enforced by ``@login_required``).
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/dashboard.html`` with
+        role-appropriate context data.
     """
     user = request.user
     context = {"user": user}
@@ -141,7 +213,17 @@ def dashboard_view(request):
 
 def article_list_view(request):
     """
-    Shows all the approved articles to everyone
+    Display a list of all approved articles.
+
+    Publicly accessible - no authentication required. Only articles with
+    `approved=True` are shown, ordered newes first.
+
+    :param:
+        request(django.http.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        django.http.HttpResponse: Rendered `news_app/article_list.html`
+        with a QuerySet of approved articles in the context under `'articles'`.
     """
     # Only get approved articles
     articles = Article.objects.filter(approved=True).order_by("-created_at")
@@ -151,8 +233,19 @@ def article_list_view(request):
 
 def article_detail_view(request, pk):
     """
-    Shows single article detail.
-    Returns 404 if article not found.
+        Display the full detail page for a single approved article.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the article to display.
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/article_detail.html``
+        with the article in the context under ``'article'``.
+
+    Raises:
+        django.http.Http404: If no approved article with the
+        given ``pk`` exists.
     """
     # get_object_or_404 handles wrong IDs
     article = get_object_or_404(Article, pk=pk, approved=True)
@@ -164,8 +257,21 @@ def article_detail_view(request, pk):
 @permission_required("news_app.add_article", raise_exception=True)
 def create_article_view(request):
     """
-    Allows journalists to create articles
-    Requires login and add_article permission
+    Allow a journalist to create a new article.
+
+    Requires the user to be logged in and to have the ``add_article``
+    permission (assigned to the Journalist group). On a valid POST
+    submission, the article is saved with the requesting user set as the
+    author and redirected to the dashboard with a success message.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'dashboard'`` after successful creation.
+            - Rendered ``news_app/article_form.html`` with the form and
+              ``action='Create'`` on GET, or on invalid POST.
     """
 
     if request.method == "POST":
@@ -199,7 +305,26 @@ def create_article_view(request):
 @permission_required("news_app.change_article", raise_exception=True)
 def edit_article_view(request, pk):
     """
-    Allows journalists/editors to edit articles.
+    Allow a journalist or editor to edit an existing article.
+
+    Journalists may only edit their own articles. Editors may edit any article.
+    If a journalist attempts to edit an article they do not own, they are
+    redirected to the dashboard with an error message.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the article to edit.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'dashboard'`` after successful update.
+            - Redirect to ``'dashboard'`` if a journalist tries to edit
+              another journalist's article.
+            - Rendered ``news_app/article_form.html`` with the populated form
+              and ``action='Edit'`` on GET, or on invalid POST.
+
+    Raises:
+        django.http.Http404: If no article with the given ``pk`` exists.
     """
     article = get_object_or_404(Article, pk=pk)
 
@@ -228,11 +353,30 @@ def edit_article_view(request, pk):
 @permission_required("news_app.can_approve_article", raise_exception=True)
 def approve_article_view(request, pk):
     """
-    Allows editors to approve articles
-    When approved:
-    1. Sends email to subscribers
-    2. Posts to X (Twitter)
-    Both handled here in view (no signals)
+        Allow an editor to approve a pending article.
+
+    On a POST submission, sets ``article.approved = True``, saves the record,
+    then triggers two side-effects:
+
+    1. Email notifications to subscribers via
+    :func:`~news_app.utils.send_approval_emails`.
+    2. A tweet posted to X (Twitter) via
+    :func:`~news_app.utils.post_to_twitter`.
+
+    Requires the ``can_approve_article`` permission (assigned to the Editor group).
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the article to approve.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'dashboard'`` after successful approval.
+            - Rendered ``news_app/approve_article.html`` with the article
+              in context on GET (confirmation page).
+
+    Raises:
+        django.http.Http404: If no article with the given ``pk`` exists.
     """
     article = get_object_or_404(Article, pk=pk)
 
@@ -257,7 +401,26 @@ def approve_article_view(request, pk):
 @permission_required("news_app.delete_article", raise_exception=True)
 def delete_article_view(request, pk):
     """
-    Allows editors/journalists to delete articles.
+    Allow a journalist or editor to delete an article.
+
+    Journalists may only delete their own articles. If a journalist attempts
+    to delete an article they do not own, they are redirected to the dashboard
+    with an error message.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the article to delete.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'dashboard'`` after successful deletion.
+            - Redirect to ``'dashboard'`` if a journalist tries to delete
+              another journalist's article.
+            - Rendered ``news_app/delete_confirm.html`` with the article
+              in context on GET (confirmation page).
+
+    Raises:
+        django.http.Http404: If no article with the given ``pk`` exists.
     """
     article = get_object_or_404(Article, pk=pk)
 
@@ -282,7 +445,17 @@ def delete_article_view(request, pk):
 
 def newsletter_list_view(request):
     """
-    Shows all newsletters to everyone.
+        Display a list of all newsletters.
+
+    Publicly accessible — no authentication required. All newsletters are
+    shown, ordered newest first.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/newsletter_list.html``
+        with all newsletters in the context under ``'newsletters'``.
     """
     newsletters = Newsletter.objects.all().order_by("-created_at")
 
@@ -293,8 +466,18 @@ def newsletter_list_view(request):
 
 def newsletter_detail_view(request, pk):
     """
-    Shows single newsletter detail.
-    Returns 404 if not found.
+    Display the full detail page for a single newsletter.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the newsletter to display.
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/newsletter_detail.html``
+        with the newsletter in the context under ``'newsletter'``.
+
+    Raises:
+        django.http.Http404: If no newsletter with the given ``pk`` exists.
     """
     newsletter = get_object_or_404(Newsletter, pk=pk)
 
@@ -307,7 +490,20 @@ def newsletter_detail_view(request, pk):
 @permission_required("news_app.add_newsletter", raise_exception=True)
 def create_newsletter_view(request):
     """
-    Allows journalists to create newsletters.
+    Allow a journalist to create a new newsletter.
+
+    On a valid POST submission, saves the newsletter with the requesting user
+    as the author and calls ``form.save_m2m()`` to persist the ManyToMany
+    ``articles`` relationship.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to the new newsletter's detail page on success.
+            - Rendered ``news_app/newsletter_form.html`` with the form and
+              ``action='Create'`` on GET, or on invalid POST.
     """
     if request.method == "POST":
         form = NewsletterForm(request.POST)
@@ -334,8 +530,26 @@ def create_newsletter_view(request):
 @permission_required("news_app.change_newsletter", raise_exception=True)
 def edit_newsletter_view(request, pk):
     """
-    Allows journalists/editors to
-    edit newsletters.
+        Allow a journalist or editor to edit an existing newsletter.
+
+    Journalists may only edit their own newsletters. Editors may edit any
+    newsletter. If a journalist attempts to edit a newsletter they do not
+    own, they are redirected to the newsletter list with an error message.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the newsletter to edit.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to the newsletter's detail page after successful update.
+            - Redirect to ``'newsletter_list'`` if a journalist tries to edit
+              another journalist's newsletter.
+            - Rendered ``news_app/newsletter_form.html`` with the populated
+              form and ``action='Edit'`` on GET, or on invalid POST.
+
+    Raises:
+        django.http.Http404: If no newsletter with the given ``pk`` exists.
     """
     newsletter = get_object_or_404(Newsletter, pk=pk)
 
@@ -363,8 +577,20 @@ def edit_newsletter_view(request, pk):
 @permission_required("news_app.delete_newsletter", raise_exception=True)
 def delete_newsletter_view(request, pk):
     """
-    Allows journalists/editors to
-    delete newsletters.
+    Allow a journalist or editor to delete a newsletter.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the newsletter to delete.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'newsletter_list'`` after successful deletion.
+            - Rendered ``news_app/delete_confirm.html`` with the newsletter
+              in context on GET (confirmation page).
+
+    Raises:
+        django.http.Http404: If no newsletter with the given ``pk`` exists.
     """
     newsletter = get_object_or_404(Newsletter, pk=pk)
 
@@ -384,8 +610,18 @@ def delete_newsletter_view(request, pk):
 @login_required
 def subscription_view(request):
     """
-    Shows reader's current subscriptions.
-    Allows managing subscriptions.
+    Display the subscription management page for the current user.
+
+    Lists all available publishers and journalists so the user can
+    subscribe or unsubscribe as they wish.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+            User must be authenticated.
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/subscriptions.html``
+        with ``'publishers'`` and ``'journalists'`` QuerySets in the context.
     """
     # Get all publishers and journalists
     publishers = Publisher.objects.all()
@@ -404,9 +640,22 @@ def subscription_view(request):
 @login_required
 def subscribe_publisher_view(request, pk):
     """
-    Toggles subscription to a publisher.
-    If subscribed - unsubscribe
-    If not subscribed - subscribe
+    Toggle the current user's subscription to a publisher.
+
+    If the user is already subscribed to the publisher, they are unsubscribed.
+    Otherwise, they are subscribed. Always redirects back to the subscriptions
+    page after the toggle.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the :class:`~news_app.models.Publisher`
+            to subscribe or unsubscribe from.
+
+    Returns:
+        django.http.HttpResponseRedirect: A redirect to ``'subscriptions'``.
+
+    Raises:
+        django.http.Http404: If no publisher with the given ``pk`` exists.
     """
     publisher = get_object_or_404(Publisher, pk=pk)
 
@@ -424,7 +673,23 @@ def subscribe_publisher_view(request, pk):
 @login_required
 def subscribe_journalist_view(request, pk):
     """
-    Toggles subscription to a journalist.
+     Toggle the current user's subscription (follow) to a journalist.
+
+    If the user already follows the journalist, they are unfollowed.
+    Otherwise, they begin following them.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the journalist
+            (:class:`~news_app.models.CustomUser` with ``role='journalist'``)
+            to follow or unfollow.
+
+    Returns:
+        django.http.HttpResponseRedirect: A redirect to ``'subscriptions'``.
+
+    Raises:
+        django.http.Http404: If no journalist user with
+        the given ``pk`` exists.
     """
     journalist = get_object_or_404(CustomUser, pk=pk, role="journalist")
 
@@ -447,7 +712,15 @@ def subscribe_journalist_view(request, pk):
 @login_required
 def publisher_list_view(request):
     """
-    Shows all publishers.
+    Display a list of all publishers, sorted alphabetically by name.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+            User must be authenticated.
+
+    Returns:
+        django.http.HttpResponse: Rendered ``news_app/publisher_list.html``
+        with a QuerySet of all publishers in the context under ``'publishers'``.
     """
     publishers = Publisher.objects.all().order_by("name")
 
@@ -461,8 +734,21 @@ def publisher_list_view(request):
 # )
 def create_publisher_view(request):
     """
-    Allows creating new publishers.
-    Only superusers or staff can create publishers.
+        Allow an authenticated user to create a new publisher.
+
+    Reads the publisher ``name`` directly from ``request.POST``. If the name
+    is present and non-empty, a new :class:`~news_app.models.Publisher` record
+    is created and the user is redirected to the publisher list.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+            POST body should include ``'name'``.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'publisher_list'`` on successful creation.
+            - Rendered ``news_app/publisher_form.html`` with ``action='Create'``
+              on GET, or if the name field was empty on POST.
     """
     if request.method == "POST":
         name = request.POST.get("name")
@@ -480,7 +766,24 @@ def create_publisher_view(request):
 @login_required
 def join_publisher_view(request, pk):
     """
-    Allows journalists/editors to join a publisher.
+    Allow a journalist or editor to join a publisher organisation.
+
+    On POST, adds the requesting user to the publisher's ``journalists`` or
+    ``editors`` ManyToMany field based on their role. Readers receive an error
+    message and are not added.
+
+    :param:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the publisher to join.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'publisher_list'`` after joining.
+            - Rendered ``news_app/publisher_join_confirm.html`` with the
+              publisher in context on GET (confirmation page).
+
+    Raises:
+        django.http.Http404: If no publisher with the given ``pk`` exists.
     """
     publisher = get_object_or_404(Publisher, pk=pk)
 
@@ -505,7 +808,23 @@ def join_publisher_view(request, pk):
 @login_required
 def leave_publisher_view(request, pk):
     """
-    Allows journalists/editors to leave a publisher.
+    Allow a journalist or editor to leave a publisher organisation.
+
+    On POST, removes the requesting user from the publisher's ``journalists``
+    or ``editors`` ManyToMany field based on their role.
+
+    Args:
+        request (django.http.HttpRequest): The incoming HTTP request.
+        pk (int): The primary key of the publisher to leave.
+
+    Returns:
+        django.http.HttpResponse:
+            - Redirect to ``'publisher_list'`` after leaving.
+            - Rendered ``news_app/publisher_leave_confirm.html`` with the
+              publisher in context on GET (confirmation page).
+
+    Raises:
+        django.http.Http404: If no publisher with the given ``pk`` exists.
     """
     publisher = get_object_or_404(Publisher, pk=pk)
 
