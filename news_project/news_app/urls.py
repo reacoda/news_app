@@ -1,3 +1,24 @@
+"""
+URL routing configuration for the News App web interface.
+
+This module defines all URL patterns for the browser-facing (HTML) views
+of the News App. Each URL is mapped to a corresponding view function or
+class in :mod:`news_app.views`.
+
+URL groups:
+
+- **Home** — landing page
+- **Authentication** — register, login, logout
+- **Dashboard** — role-specific overview page
+- **Articles** — list, detail, create, edit, delete, approve
+- **Newsletters** — list, detail, create, edit, delete
+- **Subscriptions** — manage publisher and journalist subscriptions
+- **Publishers** — list, create, join, leave
+
+Note:
+    API endpoint routing is defined separately in :mod:`news_app.api_urls`
+    and is typically mounted under ``/api/`` in the project's root 
+"""
 from django.urls import path
 
 # from django.contrib.auth.views import LogoutView
