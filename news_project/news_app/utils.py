@@ -361,3 +361,5 @@ def post_to_twitter(article):
     except Exception as e:
         # Any other unexpected error
         print(f"Twitter error: {e}")
+
+
