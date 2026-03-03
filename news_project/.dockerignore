@@ -1,0 +1,19 @@
+# Never copy the .env file into the container
+# Docker Compose passes these as environment variables instead
+.env
+
+# Don't copy virtual environment - dependencies installed via requirements.txt
+venv/
+env/
+
+# Don't copy git history
+.git/
+.gitignore
+
+# Don't copy docs build
+docs/_build/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
