@@ -1,4 +1,4 @@
-# 📰 News App
+# News App
 
 A Django-based news application with role-based access control for 
 Readers, Journalists, and Editors. Features article management, 
@@ -6,7 +6,7 @@ newsletters, subscriptions, and a REST API with JWT authentication.
 
 ---
 
-## 🚀 Running with Virtual Environment
+## Running with Virtual Environment
 
 ### Prerequisites
 - Python 3.12+
@@ -63,11 +63,11 @@ newsletters, subscriptions, and a REST API with JWT authentication.
    python manage.py runserver
 ```
 
-9. Visit: `http://localhost:8000` 🎉
+9. Visit: `http://localhost:8000` 
 
 ---
 
-## 🐳 Running with Docker
+## Running with Docker
 
 ### Prerequisites
 - Docker Desktop installed and running
@@ -85,7 +85,7 @@ newsletters, subscriptions, and a REST API with JWT authentication.
    docker-compose up --build
 ```
 
-3. Visit: `http://localhost:8000` 🎉
+3. Visit: `http://localhost:8000` 
 
 4. To stop the containers:
 ```bash
@@ -94,7 +94,7 @@ newsletters, subscriptions, and a REST API with JWT authentication.
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
 Never commit your `.env` file! Use `.env.example` as a guide.
 Create your own `.env` file with these variables:
@@ -107,13 +107,9 @@ Create your own `.env` file with these variables:
 | `DB_HOST` | Database host | `localhost` |
 | `DB_PORT` | Database port | `3306` |
 
-> ⚠️ A reviewer access file called `credentials.txt` has been 
-> provided separately with temporary credentials for review 
-> purposes only. This file will be removed after review is complete.
-
 ---
 
-## 📚 Documentation
+## Documentation
 
 Full Sphinx documentation is available in the `docs/` folder.
 
@@ -121,7 +117,7 @@ To view it, open `docs/_build/html/index.html` in your browser.
 
 ---
 
-## 🐳 Docker Hub
+## Docker Hub
 
 The Docker image is publicly available at:
 ```
@@ -130,7 +126,7 @@ docker pull tiisetsomphuthi/news-app:latest
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 ```
 news_project/
 ├── news_app/           # Main Django application
@@ -150,7 +146,7 @@ news_project/
 
 ---
 
-## 👤 User Roles
+## User Roles
 
 | Role | Permissions |
 |---|---|
