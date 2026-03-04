@@ -26,5 +26,3 @@ media/
 .DS_Store
 Thumbs.db
 
-# Sphinx build output (we WILL commit docs/ but not _build)
-docs/_build/
